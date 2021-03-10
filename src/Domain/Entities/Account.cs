@@ -10,6 +10,7 @@ namespace Domain.Entities
         public string Title { get; set; } = "NaN";
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string Name => $"{FirstName} {LastName}";
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public bool AcceptTerms { get; set; }

@@ -1,7 +1,9 @@
-﻿namespace Domain
+﻿using System;
+
+namespace Domain
 {
     public class BaseEntity
     {
-        public int Id { get; set; }
+        public Guid UId { get; set; }
     }
 }

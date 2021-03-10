@@ -1,7 +1,6 @@
-﻿using Api.Hubs;
-using Api.Middleware;
-using CryptoVision.Api.Services;
+﻿using CryptoVision.Api.Services;
 using Domain.Entities;
+using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;

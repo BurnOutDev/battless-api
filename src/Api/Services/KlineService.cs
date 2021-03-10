@@ -1,13 +1,12 @@
-﻿using Api.Hubs;
-using CryptoVision.Api.Hubs;
+﻿using CryptoVision.Api.Hubs;
 using CryptoVision.Api.Models;
+using Domain.Models;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using WebSocketSharp;
 
 namespace CryptoVision.Api.Services

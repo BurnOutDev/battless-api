@@ -30,6 +30,7 @@ namespace Application
         void ResetPassword(ResetPasswordRequest model);
         IEnumerable<AccountResponse> GetAll();
         AccountResponse GetById(int id);
+        Account GetByEmail(string email);
         AccountResponse Create(CreateRequest model);
         AccountResponse Update(int id, UpdateRequest model);
         void Delete(int id);
@@ -419,6 +420,11 @@ namespace Application
             {
                 Amount = acc.Balance
             };
+        }
+
+        public Account GetByEmail(string email)
+        {
+            return _context.Accounts.FirstOrDefault(x => x.Email == email);
         }
     }
 }
