@@ -25,7 +25,6 @@ namespace CryptoVision.Api.Services
         public SortedDictionary<long, Guid> TimeMatches { get; set; }
         public SortedDictionary<decimal, Guid> LongPriceMatches { get; set; }
         public SortedDictionary<decimal, Guid> ShortPriceMatches { get; set; }
-
         #endregion
 
         public HashSet<BetModel> UnmatchedLongBets { get; set; }
@@ -65,9 +64,10 @@ namespace CryptoVision.Api.Services
             {
                 var mat = new List<Tuple<BetModel, BetModel, Game>>();
 
-                UnmatchedLongBets.OrderBy(x => x.Amount).ToList().ForEach(x =>
+                UnmatchedLongBets.OrderBy(bet => bet.Amount).ToList().ForEach(x =>
                 {
-                    var sb = UnmatchedShortBets.FirstOrDefault(e => e.Amount == x.Amount);
+                    //Added email comparison to avoid matching to self
+                    var sb = UnmatchedShortBets.FirstOrDefault(e => e.Amount == x.Amount && x.User.Email != e.User.Email);
 
                     if (sb != null)
                     {
@@ -216,6 +216,12 @@ namespace CryptoVision.Api.Services
             klineHub.Clients.Client(EmailConnectionId[message.Player.Email]).SendAsync(message.Name, message);
             Console.WriteLine($"{message.Name}: {message}");
         }
+
+        public void SendError(SignalMessage message)
+        {
+            klineHub.Clients.Client(EmailConnectionId[message.Player.Email]).SendAsync(message.Name, message);
+            Console.WriteLine($"{message.Name}: {message}");
+        }
     }
 }
 
@@ -322,13 +328,21 @@ namespace SignalREvents
         public Player Player { get; set; }
         public string Name { get; set; }
     }
-}
 
-public class Constants
-{
-    public string GameEnded { get; set; } = nameof(GameEnded);
-    public string GameStarted { get; set; } = nameof(GameStarted);
-    public string TimeElapsed { get; set; } = nameof(TimeElapsed);
+    public class SignalError : SignalMessage
+    {
+        public SignalError(Player receiver, string method, string message) : base(receiver, method)
+        {
+            Message = message;
+        }
+
+        public SignalError(Player receiver, string message) : base(receiver, nameof(SignalError))
+        {
+            Message = message;
+        }
+
+        public string Message { get; set; }
+    }
 }
 
 public class BetModel
