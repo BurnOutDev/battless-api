@@ -1,5 +1,6 @@
 ﻿using CryptoVision.Api.Hubs;
 using CryptoVision.Api.Models;
+using Domain.Entities;
 using Domain.Models;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;

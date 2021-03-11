@@ -63,7 +63,7 @@ namespace Api.Controllers
         }
 
         [HttpGet("[action]")]
-        public IActionResult GetBalance() => Ok(Account.Balance);
+        public IActionResult GetBalance() => Ok(Account?.Balance);
 
         [HttpPost("[action]")]
         public IActionResult ChangeBalance(BalanceRequest balance)

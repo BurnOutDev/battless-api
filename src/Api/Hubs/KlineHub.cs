@@ -48,7 +48,17 @@ namespace CryptoVision.Api.Hubs
         public void RegisterConnection()
         {
             var acc = Context.GetHttpContext().Items["Account"] as Account;
-            _gameService.EmailConnectionId.Add(acc.Email, Context.ConnectionId);
+
+            if (_gameService.EmailConnectionId.ContainsKey(acc.Email))
+            {
+                _gameService.EmailConnectionId[acc.Email] = Context.ConnectionId;
+            }
+            else
+            {
+                _gameService.EmailConnectionId.Add(acc.Email, Context.ConnectionId);
+            }
+
+            _gameService.SendState(acc.Email, acc.Balance);
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)

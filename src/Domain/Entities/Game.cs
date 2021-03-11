@@ -20,6 +20,6 @@ namespace Domain.Entities
         public decimal StartPrice { get; set; }
         public decimal EndPrice { get; set; }
 
-        public List<ResponseKlineStreamModel> KlineStreams { get; set; }
+        public List<ResponseKlineStreamModel> KlineStreams { get; set; } = new List<ResponseKlineStreamModel>();
     }
 }

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Domain
 {
     public class BaseEntity
     {
-        public Guid UId { get; set; }
+        [Key]
+        public Guid UId { get; set; } = Guid.NewGuid();
     }
 }

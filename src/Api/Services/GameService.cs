@@ -14,8 +14,8 @@ namespace CryptoVision.Api.Services
 {
     public class GameService
     {
-        private decimal Threshold = 150;
-        private int ThresholdUnixTime = 60000;
+        public decimal Threshold = 150;
+        public int ThresholdUnixTime = 60000;
 
         #region SortedDictionaries
         public SortedDictionary<long, Guid> TimeMatches { get; set; }
@@ -52,6 +52,64 @@ namespace CryptoVision.Api.Services
             Task.Run(MatchingTimer);
 
             klineHub = klinehub;
+        }
+
+        public void SendState(string email, decimal currentBalance)
+        {
+            string state;
+
+            var matched = Matched.FirstOrDefault(x => x.AccountWhoBetLong.Email == email || x.AccountWhoBetShort.Email == email);
+            var pending = PendingMatched.FirstOrDefault(x => x.AccountWhoBetLong.Email == email || x.AccountWhoBetShort.Email == email);
+            var ended = EndedMatches.FirstOrDefault(x => x.AccountWhoBetLong.Email == email || x.AccountWhoBetShort.Email == email);
+            var unmatchedLongs = UnmatchedLongBets.FirstOrDefault(x => x.Player.Email == email);
+            var unmatchedShorts = UnmatchedShortBets.FirstOrDefault(x => x.Player.Email == email);
+
+            if (matched != null)
+            {
+                state = GameState.Matched.ToString();
+                var opponentName = matched.AccountWhoBetLong.Email == email ? matched.AccountWhoBetShort.Name : matched.AccountWhoBetLong.Name;
+
+                var time = matched.KlineStreams.LastOrDefault().EventTime - matched.KlineStreams.FirstOrDefault().EventTime;
+
+                SendMessage(new MatchStarted(email, matched.KlineStreams.FirstOrDefault().KlineItems.ClosePrice, Threshold, opponentName, ThresholdUnixTime, matched.KlineStreams.FirstOrDefault().EventTime, matched.Amount, time));
+            }
+            else if (pending != null)
+            {
+                state = GameState.Pending.ToString();
+                var opponentName = pending.AccountWhoBetLong.Email == email ? pending.AccountWhoBetShort.Name : pending.AccountWhoBetLong.Name;
+
+                SendMessage(new MatchPending(email, pending.Uid, opponentName));
+            }
+            else if (ended != null)
+            {
+                var delta = ended.KlineStreams.LastOrDefault().KlineItems.ClosePrice - ended.KlineStreams.FirstOrDefault().KlineItems.ClosePrice;
+
+                if (delta < 0)
+                {
+                    SendMessage(new GameEnded(email, ended.AccountWhoBetShort.Email == email, false));
+                }
+                else
+                {
+                    SendMessage(new GameEnded(email, ended.AccountWhoBetLong.Email == email, false));
+                }
+            }
+            else if (unmatchedLongs != null)
+            {
+                SendMessage(new BetPlaced(email, unmatchedLongs.Amount, true, false, currentBalance));
+            }
+            else if (unmatchedShorts != null)
+            {
+                SendMessage(new BetPlaced(email, unmatchedShorts.Amount, true, false, currentBalance));
+            }
+            else
+            {
+                SendMessage(new SignalMessage(email, "CLEAR"));
+            }
+
+            //return Ok(new
+            //{
+            //    State = GameState.NotFound.ToString()
+            //});
         }
 
         private void MatchingTimer()
@@ -140,8 +198,8 @@ namespace CryptoVision.Api.Services
                     LongPriceMatches.Add(closePrice + Threshold, x.Uid);
                     ShortPriceMatches.Add(closePrice - Threshold, x.Uid);
 
-                    SendMessage(new MatchStarted(x.AccountWhoBetLong.Email, closePrice, Threshold, x.AccountWhoBetShort.Name, ThresholdUnixTime, data.EventTime));
-                    SendMessage(new MatchStarted(x.AccountWhoBetShort.Email, closePrice, Threshold, x.AccountWhoBetLong.Name, ThresholdUnixTime, data.EventTime));
+                    SendMessage(new MatchStarted(x.AccountWhoBetLong.Email, closePrice, Threshold, x.AccountWhoBetShort.Name, ThresholdUnixTime, unixDate, x.Amount, data.EventTime));
+                    SendMessage(new MatchStarted(x.AccountWhoBetShort.Email, closePrice, Threshold, x.AccountWhoBetLong.Name, ThresholdUnixTime, unixDate, x.Amount, data.EventTime));
                 });
                 PendingMatched.RemoveAll(x => Matched.Select(y => y.Uid).Contains(x.Uid));
             }
@@ -231,6 +289,15 @@ namespace CryptoVision.Api.Services
     {
         Long = 1,
         Short = -1
+    }
+
+    public enum GameState
+    {
+        Unmatched,
+        Pending,
+        Matched,
+        Ended,
+        NotFound
     }
 
     public class UnmatchedBet

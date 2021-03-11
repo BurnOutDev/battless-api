@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities
 {
-    public class KlineItems : BaseEntity
+    public class KlineItems
     {
         public long KlineStartTime { get; set; }
         public long KlineCloseTime { get; set; }
