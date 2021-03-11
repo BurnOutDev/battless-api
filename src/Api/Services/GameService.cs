@@ -71,7 +71,7 @@ namespace CryptoVision.Api.Services
 
                 var time = matched.KlineStreams.LastOrDefault().EventTime - matched.KlineStreams.FirstOrDefault().EventTime;
 
-                SendMessage(new MatchStarted(email, matched.KlineStreams.FirstOrDefault().KlineItems.ClosePrice, Threshold, opponentName, ThresholdUnixTime, matched.KlineStreams.FirstOrDefault().EventTime, matched.Amount, time));
+                SendMessage(new MatchStarted(email, matched.KlineStreams.FirstOrDefault().KlineItems.ClosePrice, Threshold, opponentName, ThresholdUnixTime, matched.KlineStreams.FirstOrDefault().EventTime, matched.Amount, matched.AccountWhoBetLong.Email == email ? true : false, time));
             }
             else if (pending != null)
             {
@@ -86,11 +86,11 @@ namespace CryptoVision.Api.Services
 
                 if (delta < 0)
                 {
-                    SendMessage(new GameEnded(email, ended.AccountWhoBetShort.Email == email, false));
+                    SendMessage(new GameEnded(email, ended.AccountWhoBetShort.Email == email, false, ended.AccountWhoBetShort.Email == email ? false : true));
                 }
                 else
                 {
-                    SendMessage(new GameEnded(email, ended.AccountWhoBetLong.Email == email, false));
+                    SendMessage(new GameEnded(email, ended.AccountWhoBetLong.Email == email, false, ended.AccountWhoBetLong.Email == email ? true : false));
                 }
             }
             else if (unmatchedLongs != null)
@@ -172,6 +172,8 @@ namespace CryptoVision.Api.Services
                 Decrease = true
             });
 
+            EndedMatches.RemoveAll(x => x.AccountWhoBetLong.Email == account.Email || x.AccountWhoBetShort.Email == account.Email);
+
             SendMessage(new BalanceUpdated(model.User.Email, balance.Amount));
 
             SendMessage(new BetPlaced(model.User.Email, model.Amount, model.Long, model.Short, balance.Amount));
@@ -198,8 +200,8 @@ namespace CryptoVision.Api.Services
                     LongPriceMatches.Add(closePrice + Threshold, x.Uid);
                     ShortPriceMatches.Add(closePrice - Threshold, x.Uid);
 
-                    SendMessage(new MatchStarted(x.AccountWhoBetLong.Email, closePrice, Threshold, x.AccountWhoBetShort.Name, ThresholdUnixTime, unixDate, x.Amount, data.EventTime));
-                    SendMessage(new MatchStarted(x.AccountWhoBetShort.Email, closePrice, Threshold, x.AccountWhoBetLong.Name, ThresholdUnixTime, unixDate, x.Amount, data.EventTime));
+                    SendMessage(new MatchStarted(x.AccountWhoBetLong.Email, closePrice, Threshold, x.AccountWhoBetShort.Name, ThresholdUnixTime, unixDate, x.Amount, false, 0));
+                    SendMessage(new MatchStarted(x.AccountWhoBetShort.Email, closePrice, Threshold, x.AccountWhoBetLong.Name, ThresholdUnixTime, unixDate, x.Amount, true, 0));
                 });
                 PendingMatched.RemoveAll(x => Matched.Select(y => y.Uid).Contains(x.Uid));
             }
@@ -255,8 +257,8 @@ namespace CryptoVision.Api.Services
 
                 SendMessage(new BalanceUpdated(g.AccountWhoBetShort.Email, balance));
 
-                SendMessage(new GameEnded(g.AccountWhoBetShort.Email, true, false));
-                SendMessage(new GameEnded(g.AccountWhoBetLong.Email, false, false));
+                SendMessage(new GameEnded(g.AccountWhoBetShort.Email, true, false, false));
+                SendMessage(new GameEnded(g.AccountWhoBetLong.Email, false, false, true));
             }
             else
             {
@@ -267,8 +269,8 @@ namespace CryptoVision.Api.Services
 
                 SendMessage(new BalanceUpdated(g.AccountWhoBetLong.Email, balance));
 
-                SendMessage(new GameEnded(g.AccountWhoBetShort.Email, false, false));
-                SendMessage(new GameEnded(g.AccountWhoBetLong.Email, true, false));
+                SendMessage(new GameEnded(g.AccountWhoBetShort.Email, false, false, false));
+                SendMessage(new GameEnded(g.AccountWhoBetLong.Email, true, false, true));
             }
         }
 
