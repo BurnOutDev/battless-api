@@ -201,6 +201,8 @@ namespace CryptoVision.Api.Services
                 Decrease = true
             });
 
+            EndedMatches.RemoveAll(x => x.AccountWhoBetLong.Email == account.Email || x.AccountWhoBetShort.Email == account.Email);
+
             SendMessage(new BalanceUpdated(model.User.Email, balance.Amount));
 
             SendMessage(new BetPlaced(model.User.Email, model.Amount, model.Long, model.Short, balance.Amount));
