@@ -1,4 +1,5 @@
 ﻿using Application;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,32 +26,16 @@ namespace ConfigurationMiddleware.Extensions
 
         public static IServiceCollection AddContext(this IServiceCollection services, IConfiguration configuration)
         {
-            var i = configuration.GetSection("AppSettings").GetSection("UseInMemory").Get<bool>();
-
-            if (i)
-            {
-                services.AddDbContext<GamblingDbContext>(x =>
-                {
-                    x.UseInMemoryDatabase("InMemoryDatabase");
-                }, ServiceLifetime.Singleton);
-            }
-            else
-            {
-                services.AddDbContext<GamblingDbContext>(x =>
-                {
-                    x.UseSqlServer(configuration.GetConnectionString("Connection"));
-                }, ServiceLifetime.Singleton);
-            }
-          
             return services;
         }
 
         public static IServiceCollection AddDI(this IServiceCollection services)
         {
-            services.AddSingleton<IClientConfigurationService, ClientConfigurationService>();
-
             services.AddSingleton<IAccountService, AccountService>();
             services.AddSingleton<IEmailService, EmailService>();
+
+            services.AddSingleton<MongoDbRepository<Account>>();
+            services.AddSingleton<MongoDbRepository<Game>>();
 
             return services;
         }

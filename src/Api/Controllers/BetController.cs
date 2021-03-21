@@ -1,8 +1,12 @@
 ﻿using Api.Controllers;
 using Application;
 using CryptoVision.Api.Services;
+using Domain.Entities;
 using Domain.SignalREvents;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using Persistence;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CryptoVision.Api.Controllers
@@ -12,10 +16,12 @@ namespace CryptoVision.Api.Controllers
     public class BetController : BaseController
     {
         private readonly GameService gameService;
+        private readonly MongoDbRepository<Game> gameRepository;
 
-        public BetController(GameService gameService, IAccountService accountService)
+        public BetController(GameService gameService, IAccountService accountService, MongoDbRepository<Game> gameRepository)
         {
             this.gameService = gameService;
+            this.gameRepository = gameRepository;
         }
 
         [HttpPost]
@@ -34,6 +40,80 @@ namespace CryptoVision.Api.Controllers
             });
 
             return Ok();
+        }
+
+        [HttpGet("[action]")]
+        public IActionResult GetTableData()
+        {
+            var tableData = new TableData();
+
+            var longMatches = gameRepository.Collection.Find(x => x.AccountWhoBetLong.Email == Account.Email).ToList();
+            var shortMatches = gameRepository.Collection.Find(x => x.AccountWhoBetShort.Email == Account.Email).ToList();
+
+            tableData.OrderHistory = new List<OrderHistoryItem>();
+
+            var longHistoryItems = longMatches.Select(ended =>
+            {
+                var delta = ended.KlineStreams.LastOrDefault().KlineItems.ClosePrice - ended.KlineStreams.FirstOrDefault().KlineItems.ClosePrice;
+
+                return new OrderHistoryItem
+                {
+                    Amount = ended.Amount,
+                    BattleId = ended.Id.ToString().Substring(0, 6),
+                    Bet = "LONG",
+                    Currency = ended.Currency,
+                    EndPrice = ended.KlineStreams.LastOrDefault().KlineItems.ClosePrice,
+                    StartPrice = ended.KlineStreams.FirstOrDefault().KlineItems.ClosePrice,
+                    Profit = delta > 0 ? ended.Amount : 0
+                };
+            });
+
+            var shortHistoryItems = shortMatches.Select(ended =>
+            {
+                var delta = ended.KlineStreams.LastOrDefault().KlineItems.ClosePrice - ended.KlineStreams.FirstOrDefault().KlineItems.ClosePrice;
+
+                return new OrderHistoryItem
+                {
+                    Amount = ended.Amount,
+                    BattleId = ended.Id.ToString().Substring(0, 6),
+                    Bet = "SHORT",
+                    Currency = ended.Currency,
+                    EndPrice = ended.KlineStreams.LastOrDefault().KlineItems.ClosePrice,
+                    StartPrice = ended.KlineStreams.FirstOrDefault().KlineItems.ClosePrice,
+                    Profit = delta < 0 ? ended.Amount : 0
+                };
+            });
+
+            tableData.OrderHistory.AddRange(longHistoryItems);
+            tableData.OrderHistory.AddRange(shortHistoryItems);
+
+            tableData.WinningStreaks = new List<WinningStreakItem>();
+
+            return Ok(tableData);
+        }
+
+        public class TableData
+        {
+            public List<OrderHistoryItem> OrderHistory { get; set; }
+            public List<WinningStreakItem> WinningStreaks { get; set; }
+        }
+
+        public class OrderHistoryItem
+        {
+            public string BattleId { get; set; }
+            public string Currency { get; set; }
+            public string Bet { get; set; }
+            public decimal Amount { get; set; }
+            public decimal StartPrice { get; set; }
+            public decimal EndPrice { get; set; }
+            public decimal Profit { get; set; }
+        }
+
+        public class WinningStreakItem
+        {
+            public int Ranking { get; set; }
+            public string Username { get; set; }
+            public int WinningStreak { get; set; }
         }
 
         //[HttpGet("[action]")]

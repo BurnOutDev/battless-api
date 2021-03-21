@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver;
 using Persistence;
 using System;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,7 +26,7 @@ namespace Api.Middleware
             _appSettings = appSettings.Value;
         }
 
-        public async Task Invoke(HttpContext context, GamblingDbContext dataContext)
+        public async Task Invoke(HttpContext context, MongoDbRepository<Account> dataContext)
         {
             var request = context.Request;
 
@@ -43,7 +44,7 @@ namespace Api.Middleware
             await _next(context);
         }
 
-        private async Task attachAccountToContext(HttpContext context, GamblingDbContext dataContext, string token)
+        private async Task attachAccountToContext(HttpContext context, MongoDbRepository<Account> dataContext, string token)
         {
             try
             {
@@ -60,10 +61,10 @@ namespace Api.Middleware
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var accountId = int.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
+                var accountId = Guid.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
 
                 // attach account to context on successful jwt validation
-                context.Items["Account"] = await dataContext.Accounts.FindAsync(accountId);
+                context.Items["Account"] = dataContext.Collection.Find(x => x.Id == accountId).FirstOrDefault();
             }
             catch 
             {

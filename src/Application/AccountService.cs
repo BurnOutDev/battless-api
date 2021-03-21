@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Domain.Helpers;
 using Application.Helpers;
+using MongoDB.Driver;
 
 namespace Application
 {
@@ -29,24 +30,24 @@ namespace Application
         void ValidateResetToken(ValidateResetTokenRequest model);
         void ResetPassword(ResetPasswordRequest model);
         IEnumerable<AccountResponse> GetAll();
-        AccountResponse GetById(int id);
+        AccountResponse GetById(Guid id);
         Account GetByEmail(string email);
         AccountResponse Create(CreateRequest model);
-        AccountResponse Update(int id, UpdateRequest model);
-        void Delete(int id);
+        AccountResponse Update(Guid id, UpdateRequest model);
+        void Delete(Guid id);
 
-        BalanceResponse UpdateBalance(int id, BalanceRequest model);
+        BalanceResponse UpdateBalance(Guid id, BalanceRequest model);
     }
 
     public class AccountService : IAccountService
     {
-        private readonly GamblingDbContext _context;
+        private readonly MongoDbRepository<Account> _context;
         private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
         private readonly IEmailService _emailService;
 
         public AccountService(
-            GamblingDbContext context,
+            MongoDbRepository<Account> context,
             IMapper mapper,
             IOptions<AppSettings> appSettings,
             IEmailService emailService)
@@ -59,7 +60,7 @@ namespace Application
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
         {
-            var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
+            var account = _context.Collection.Find(x => x.Email == model.Email).FirstOrDefault();
 
             if (account == null || !account.IsVerified || !BC.Verify(model.Password, account.PasswordHash))
                 throw new AppException("Email or password is incorrect");
@@ -67,14 +68,17 @@ namespace Application
             // authentication successful so generate jwt and refresh tokens
             var jwtToken = generateJwtToken(account);
             var refreshToken = generateRefreshToken(ipAddress);
+            if (account.RefreshTokens == null)
+            {
+                account.RefreshTokens = new List<RefreshToken>();
+            }
             account.RefreshTokens.Add(refreshToken);
 
             // remove old refresh tokens from account
             removeOldRefreshTokens(account);
 
             // save changes to db
-            _context.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOneAsync(x => x.Id == account.Id, account);
 
             var response = _mapper.Map<AuthenticateResponse>(account);
             response.JwtToken = jwtToken;
@@ -96,8 +100,7 @@ namespace Application
 
             removeOldRefreshTokens(account);
 
-            _context.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
 
             // generate new jwt
             var jwtToken = generateJwtToken(account);
@@ -115,14 +118,13 @@ namespace Application
             // revoke token and save
             refreshToken.Revoked = DateTime.UtcNow;
             refreshToken.RevokedByIp = ipAddress;
-            _context.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
         }
 
         public void Register(RegisterRequest model, string origin)
         {
             // validate
-            if (_context.Accounts.Any(x => x.Email == model.Email))
+            if (_context.Collection.Find(x => x.Email == model.Email).Any())
             {
                 // send already registered error in email to prevent account enumeration
                 sendAlreadyRegisteredEmail(model.Email, origin);
@@ -133,7 +135,7 @@ namespace Application
             var account = _mapper.Map<Account>(model);
 
             // first registered account is an admin
-            var isFirstAccount = _context.Accounts.Count() == 0;
+            var isFirstAccount = _context.Collection.CountDocuments(FilterDefinition<Account>.Empty) == 0;
             account.Role = isFirstAccount ? Role.Admin : Role.User;
             account.Created = DateTime.UtcNow;
             account.VerificationToken = randomTokenString();
@@ -148,8 +150,7 @@ namespace Application
             account.VerificationToken = null;
 
             // save account
-            _context.Accounts.Add(account);
-            _context.SaveChanges();
+            _context.Collection.InsertOne(account);
 
             // send email
             //sendVerificationEmail(account, origin);
@@ -157,20 +158,19 @@ namespace Application
 
         public void VerifyEmail(string token)
         {
-            var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token);
+            var account = _context.Collection.Find(x => x.VerificationToken == token).FirstOrDefault();
 
             if (account == null) throw new AppException("Verification failed");
 
             account.Verified = DateTime.UtcNow;
             account.VerificationToken = null;
 
-            _context.Accounts.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
         }
 
         public void ForgotPassword(ForgotPasswordRequest model, string origin)
         {
-            var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
+            var account = _context.Collection.Find(x => x.Email == model.Email).FirstOrDefault();
 
             // always return ok response to prevent email enumeration
             if (account == null) return;
@@ -179,8 +179,7 @@ namespace Application
             account.ResetToken = randomTokenString();
             account.ResetTokenExpires = DateTime.UtcNow.AddDays(1);
 
-            _context.Accounts.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
 
             // send email
             sendPasswordResetEmail(account, origin);
@@ -188,9 +187,9 @@ namespace Application
 
         public void ValidateResetToken(ValidateResetTokenRequest model)
         {
-            var account = _context.Accounts.SingleOrDefault(x =>
+            var account = _context.Collection.Find(x =>
                 x.ResetToken == model.Token &&
-                x.ResetTokenExpires > DateTime.UtcNow);
+                x.ResetTokenExpires > DateTime.UtcNow).FirstOrDefault();
 
             if (account == null)
                 throw new AppException("Invalid token");
@@ -198,9 +197,9 @@ namespace Application
 
         public void ResetPassword(ResetPasswordRequest model)
         {
-            var account = _context.Accounts.SingleOrDefault(x =>
+            var account = _context.Collection.Find(x =>
                 x.ResetToken == model.Token &&
-                x.ResetTokenExpires > DateTime.UtcNow);
+                x.ResetTokenExpires > DateTime.UtcNow).FirstOrDefault();
 
             if (account == null)
                 throw new AppException("Invalid token");
@@ -211,17 +210,16 @@ namespace Application
             account.ResetToken = null;
             account.ResetTokenExpires = null;
 
-            _context.Accounts.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
         }
 
         public IEnumerable<AccountResponse> GetAll()
         {
-            var accounts = _context.Accounts;
+            var accounts = _context.Collection.Find(FilterDefinition<Account>.Empty).ToList();
             return _mapper.Map<IList<AccountResponse>>(accounts);
         }
 
-        public AccountResponse GetById(int id)
+        public AccountResponse GetById(Guid id)
         {
             var account = getAccount(id);
             return _mapper.Map<AccountResponse>(account);
@@ -230,7 +228,7 @@ namespace Application
         public AccountResponse Create(CreateRequest model)
         {
             // validate
-            if (_context.Accounts.Any(x => x.Email == model.Email))
+            if (_context.Collection.Find(x => x.Email == model.Email).Any())
                 throw new AppException($"Email '{model.Email}' is already registered");
 
             // map model to new account object
@@ -242,18 +240,17 @@ namespace Application
             account.PasswordHash = BC.HashPassword(model.Password);
 
             // save account
-            _context.Accounts.Add(account);
-            _context.SaveChanges();
+            _context.Collection.InsertOne(account);
 
             return _mapper.Map<AccountResponse>(account);
         }
 
-        public AccountResponse Update(int id, UpdateRequest model)
+        public AccountResponse Update(Guid id, UpdateRequest model)
         {
             var account = getAccount(id);
 
             // validate
-            if (account.Email != model.Email && _context.Accounts.Any(x => x.Email == model.Email))
+            if (account.Email != model.Email && _context.Collection.Find(x => x.Email == model.Email).Any())
                 throw new AppException($"Email '{model.Email}' is already taken");
 
             // hash password if it was entered
@@ -263,31 +260,29 @@ namespace Application
             // copy model to account and save
             _mapper.Map(model, account);
             account.Updated = DateTime.UtcNow;
-            _context.Accounts.Update(account);
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == account.Id, account);
 
             return _mapper.Map<AccountResponse>(account);
         }
 
-        public void Delete(int id)
+        public void Delete(Guid id)
         {
             var account = getAccount(id);
-            _context.Accounts.Remove(account);
-            _context.SaveChanges();
+            _context.Collection.DeleteOne(x => x.Id == account.Id);
         }
 
         // helper methods
 
-        private Account getAccount(int id)
+        private Account getAccount(Guid id)
         {
-            var account = _context.Accounts.Find(id);
+            var account = _context.Collection.Find(x => x.Id == id).FirstOrDefault();
             if (account == null) throw new KeyNotFoundException("Account not found");
             return account;
         }
 
         private (RefreshToken, Account) getRefreshToken(string token)
         {
-            var account = _context.Accounts.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
+            var account = _context.Collection.Find(u => u.RefreshTokens.Any(t => t.Token == token)).FirstOrDefault();
             if (account == null) throw new AppException("Invalid token");
             var refreshToken = account.RefreshTokens.Single(x => x.Token == token);
             if (!refreshToken.IsActive) throw new AppException("Invalid token");
@@ -399,9 +394,9 @@ namespace Application
             );
         }
 
-        public BalanceResponse UpdateBalance(int id, BalanceRequest model)
+        public BalanceResponse UpdateBalance(Guid id, BalanceRequest model)
         {
-            var acc = _context.Accounts.Find(id);
+            var acc = _context.Collection.Find(x => x.Id == id).FirstOrDefault();
 
             if (model.Decrease)
             {
@@ -412,9 +407,7 @@ namespace Application
                 acc.Balance += model.Amount;
             }
 
-            _context.Update(acc);
-
-            _context.SaveChanges();
+            _context.Collection.ReplaceOne(x => x.Id == acc.Id, acc);
 
             return new BalanceResponse
             {
@@ -424,7 +417,7 @@ namespace Application
 
         public Account GetByEmail(string email)
         {
-            return _context.Accounts.FirstOrDefault(x => x.Email == email);
+            return _context.Collection.Find(x => x.Email == email).FirstOrDefault();
         }
     }
 }

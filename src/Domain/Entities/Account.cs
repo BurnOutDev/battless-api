@@ -6,7 +6,12 @@ namespace Domain.Entities
 {
     public class Account
     {
-        public int Id { get; set; }
+        public Account()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        public Guid Id { get; set; }
         public string Title { get; set; } = "NaN";
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -23,7 +28,7 @@ namespace Domain.Entities
         public DateTime? PasswordReset { get; set; }
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
-        public List<RefreshToken> RefreshTokens { get; set; }
+        public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public decimal Balance { get; set; }
 
         public bool OwnsToken(string token)

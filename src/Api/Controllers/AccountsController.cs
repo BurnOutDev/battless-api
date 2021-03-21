@@ -152,7 +152,7 @@ namespace Api.Controllers
 
         [Authorize]
         [HttpGet("{id:int}")]
-        public ActionResult<AccountResponse> GetById(int id)
+        public ActionResult<AccountResponse> GetById(Guid id)
         {
             // users can get their own account and admins can get any account
             if (id != Account.Id && Account.Role != Role.Admin)
@@ -172,7 +172,7 @@ namespace Api.Controllers
 
         [Authorize]
         [HttpPut("{id:int}")]
-        public ActionResult<AccountResponse> Update(int id, UpdateRequest model)
+        public ActionResult<AccountResponse> Update(Guid id, UpdateRequest model)
         {
             // users can update their own account and admins can update any account
             if (id != Account.Id && Account.Role != Role.Admin)
@@ -188,7 +188,7 @@ namespace Api.Controllers
 
         [Authorize]
         [HttpDelete("{id:int}")]
-        public IActionResult Delete(int id)
+        public IActionResult Delete(Guid id)
         {
             // users can delete their own account and admins can delete any account
             if (id != Account.Id && Account.Role != Role.Admin)

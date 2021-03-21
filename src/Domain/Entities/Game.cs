@@ -9,7 +9,7 @@ namespace Domain.Entities
 {
     public partial class Game
     {
-        public Guid Uid { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         public Account AccountWhoBetShort { get; set; }
         public Account AccountWhoBetLong { get; set; }
@@ -19,6 +19,8 @@ namespace Domain.Entities
 
         public decimal StartPrice { get; set; }
         public decimal EndPrice { get; set; }
+
+        public string Currency { get; set; } = "BTC";
 
         public List<ResponseKlineStreamModel> KlineStreams { get; set; } = new List<ResponseKlineStreamModel>();
     }
