@@ -13,9 +13,6 @@ namespace Domain
         public AutoMapperProfile()
         {
 
-            CreateMap<ClientApplicationJson, ClientApplication>();
-            CreateMap<ClientApplication, ClientApplicationJson>()
-                .ForMember(destination => destination.Configuration, options => options.MapFrom(source => source.Configuration.ResolveJson()));
         }
     }
 

@@ -31,23 +31,22 @@ namespace Application
         void ResetPassword(ResetPasswordRequest model);
         IEnumerable<AccountResponse> GetAll();
         AccountResponse GetById(Guid id);
-        Account GetByEmail(string email);
         AccountResponse Create(CreateRequest model);
         AccountResponse Update(Guid id, UpdateRequest model);
         void Delete(Guid id);
-
-        BalanceResponse UpdateBalance(Guid id, BalanceRequest model);
     }
 
     public class AccountService : IAccountService
     {
         private readonly MongoDbRepository<Account> _context;
+        private readonly MongoDbRepository<Course> _contextCourses;
         private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
         private readonly IEmailService _emailService;
 
         public AccountService(
             MongoDbRepository<Account> context,
+            MongoDbRepository<Course> contextCourse,
             IMapper mapper,
             IOptions<AppSettings> appSettings,
             IEmailService emailService)
@@ -56,6 +55,12 @@ namespace Application
             _mapper = mapper;
             _appSettings = appSettings.Value;
             _emailService = emailService;
+            _contextCourses = contextCourse;
+        }
+
+        public string CoursesCreate(Domain.Models.Courses.CreateRequest model)
+        {
+            _contextCourses.;
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -392,32 +397,6 @@ namespace Application
                 html: $@"<h4>Reset Password Email</h4>
                          {message}"
             );
-        }
-
-        public BalanceResponse UpdateBalance(Guid id, BalanceRequest model)
-        {
-            var acc = _context.Collection.Find(x => x.Id == id).FirstOrDefault();
-
-            if (model.Decrease)
-            {
-                acc.Balance -= model.Amount;
-            }
-            else
-            {
-                acc.Balance += model.Amount;
-            }
-
-            _context.Collection.ReplaceOne(x => x.Id == acc.Id, acc);
-
-            return new BalanceResponse
-            {
-                Amount = acc.Balance
-            };
-        }
-
-        public Account GetByEmail(string email)
-        {
-            return _context.Collection.Find(x => x.Email == email).FirstOrDefault();
         }
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -9,10 +8,8 @@ using ConfigurationMiddleware.Extensions;
 using System.Text.Json;
 using Api.Middleware;
 using Domain.Helpers;
-using CryptoVision.Api.Hubs;
 using Microsoft.AspNetCore.Http;
 using System.Globalization;
-using CryptoVision.Api.Services;
 using System.Linq;
 using Microsoft.AspNetCore.SignalR;
 
@@ -36,8 +33,6 @@ namespace ConfigurationMiddleware
                 .AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies())
                 .Configure<AppSettings>(Configuration.GetSection("AppSettings"))
                 .AddDI()
-                .AddSingleton<KlineService>()
-                .AddSingleton<GameService>()
                 .AddControllers()
                 .AddJsonOptions(conf =>
                 {
@@ -73,7 +68,6 @@ namespace ConfigurationMiddleware
                 .UseMiddleware<JwtMiddleware>()
                 .UseEndpoints(endpoints =>
                 {
-                    endpoints.MapHub<KlineHub>("/kline");
                     endpoints.MapControllers();
                     endpoints.MapGet("/", async context =>
                     {

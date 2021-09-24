@@ -35,7 +35,7 @@ namespace ConfigurationMiddleware.Extensions
             services.AddSingleton<IEmailService, EmailService>();
 
             services.AddSingleton<MongoDbRepository<Account>>();
-            services.AddSingleton<MongoDbRepository<Game>>();
+            services.AddSingleton<MongoDbRepository<Course>>();
 
             return services;
         }

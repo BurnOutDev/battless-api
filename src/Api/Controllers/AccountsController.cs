@@ -62,16 +62,6 @@ namespace Api.Controllers
             }));
         }
 
-        [HttpGet("[action]")]
-        public IActionResult GetBalance() => Ok(Account?.Balance);
-
-        [HttpPost("[action]")]
-        public IActionResult ChangeBalance(BalanceRequest balance)
-        {
-            var response = _accountService.UpdateBalance(Account.Id, balance);
-            return Ok(response);
-        }
-
         [HttpPost("authenticate")]
         public ActionResult<AuthenticateResponse> Authenticate(AuthenticateRequest model)
         {
