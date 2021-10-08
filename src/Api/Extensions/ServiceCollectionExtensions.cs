@@ -32,6 +32,7 @@ namespace ConfigurationMiddleware.Extensions
         public static IServiceCollection AddDI(this IServiceCollection services)
         {
             services.AddSingleton<IAccountService, AccountService>();
+            services.AddSingleton<ICourseService, CourseService>();
             services.AddSingleton<IEmailService, EmailService>();
 
             services.AddSingleton<MongoDbRepository<Account>>();

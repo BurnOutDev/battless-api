@@ -4,14 +4,6 @@ namespace Domain.Models.Accounts
 {
     public class AuthenticateRequest
     {
-        public string Username
-        {
-            set
-            {
-                Email = value;
-            }
-        }
-
         [EmailAddress]
         public string Email { get; set; }
 

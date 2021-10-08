@@ -14,7 +14,7 @@ namespace Domain.Models.Accounts
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
         public bool IsVerified { get; set; }
-        public string JwtToken { get; set; }
+        public string Token { get; set; }
         public string AccessToken { get; set; }
 
         [JsonIgnore] // refresh token is returned in http only cookie

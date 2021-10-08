@@ -1,6 +1,7 @@
 using AutoMapper;
 using Domain.Entities;
 using Domain.Models.Accounts;
+using Domain.Models.Courses;
 
 namespace Api.Helpers
 {
@@ -8,6 +9,12 @@ namespace Api.Helpers
     {
         // mappings between model and entity objects
         public AutoMapperProfile()
+        {
+            AccountProfiles();
+            CoursesProfile();
+        }
+
+        private void AccountProfiles()
         {
             CreateMap<Account, AccountResponse>();
 
@@ -31,6 +38,18 @@ namespace Api.Helpers
                         return true;
                     }
                 ));
+        }
+
+        private void CoursesProfile()
+        {
+            CreateMap<Chapter, ChapterResponse>();
+            CreateMap<Course, CourseResponse>();
+
+            CreateMap<CreateChapter, Chapter>();
+            CreateMap<CreateCourseRequest, Course>();
+
+            CreateMap<UpdateChapter, Chapter>();
+            CreateMap<UpdateCourseRequest, Course>();
         }
     }
 }

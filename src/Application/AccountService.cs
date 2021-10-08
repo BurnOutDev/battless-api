@@ -19,7 +19,7 @@ using MongoDB.Driver;
 
 namespace Application
 {
-    public interface IAccountService
+    public interface IAccountService : BaseService<CreateRequest, UpdateRequest, AccountResponse>
     {
         AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress);
         AuthenticateResponse RefreshToken(string token, string ipAddress);
@@ -29,11 +29,7 @@ namespace Application
         void ForgotPassword(ForgotPasswordRequest model, string origin);
         void ValidateResetToken(ValidateResetTokenRequest model);
         void ResetPassword(ResetPasswordRequest model);
-        IEnumerable<AccountResponse> GetAll();
-        AccountResponse GetById(Guid id);
-        AccountResponse Create(CreateRequest model);
-        AccountResponse Update(Guid id, UpdateRequest model);
-        void Delete(Guid id);
+        string CoursesCreate();
     }
 
     public class AccountService : IAccountService
@@ -58,9 +54,26 @@ namespace Application
             _contextCourses = contextCourse;
         }
 
-        public string CoursesCreate(Domain.Models.Courses.CreateRequest model)
+        public string CoursesCreate()
         {
-            _contextCourses.;
+            _contextCourses.Collection.InsertOne(new Course
+            {
+                Title = "example title",
+                Category = "example category",
+                Description="example description",
+                Duration = "example duration",
+                Chapters = new List<Chapter>
+                {
+                    new Chapter
+                    {
+                        Order = 1,
+                        Content = "https://trailers.imovies.cc/movie_files2/5f7b3785e2a70.mp4",
+                        ContentType = "Video"
+                    }
+                }
+            });
+
+            return "created";
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -86,8 +99,7 @@ namespace Application
             _context.Collection.ReplaceOneAsync(x => x.Id == account.Id, account);
 
             var response = _mapper.Map<AuthenticateResponse>(account);
-            response.JwtToken = jwtToken;
-            response.AccessToken = jwtToken;
+            response.Token = jwtToken;
             response.RefreshToken = refreshToken.Token;
             return response;
         }
@@ -111,7 +123,7 @@ namespace Application
             var jwtToken = generateJwtToken(account);
 
             var response = _mapper.Map<AuthenticateResponse>(account);
-            response.JwtToken = jwtToken;
+            response.Token = jwtToken;
             response.RefreshToken = newRefreshToken.Token;
             return response;
         }
