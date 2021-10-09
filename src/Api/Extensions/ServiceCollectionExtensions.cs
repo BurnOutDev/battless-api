@@ -1,10 +1,13 @@
 ﻿using Application;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Persistence;
+using System.IO;
 
 namespace ConfigurationMiddleware.Extensions
 {
@@ -31,12 +34,17 @@ namespace ConfigurationMiddleware.Extensions
 
         public static IServiceCollection AddDI(this IServiceCollection services)
         {
+            var context = new CustomAssemblyLoadContext();
+            context.LoadUnmanagedLibrary(Path.Combine(Directory.GetCurrentDirectory(), "libwkhtmltox.dll"));
+
             services.AddSingleton<IAccountService, AccountService>();
             services.AddSingleton<ICourseService, CourseService>();
             services.AddSingleton<IEmailService, EmailService>();
 
             services.AddSingleton<MongoDbRepository<Account>>();
             services.AddSingleton<MongoDbRepository<Course>>();
+
+            services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
             return services;
         }

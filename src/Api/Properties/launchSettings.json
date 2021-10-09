@@ -4,7 +4,7 @@
     "ConfigurationMiddleware": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://192.168.100.6:5001;http://192.168.100.6:5000",
+      "applicationUrl": "https://192.168.100.8:5001;http://192.168.100.8:5000",
       "launchUrl": "https://localhost:5001/Accounts/seed",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
