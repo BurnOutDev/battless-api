@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Persistence;
+using System;
 using System.IO;
 
 namespace ConfigurationMiddleware.Extensions
@@ -34,8 +35,18 @@ namespace ConfigurationMiddleware.Extensions
 
         public static IServiceCollection AddDI(this IServiceCollection services)
         {
+            var libwkhtmlFileName = "libwkhtmltox";
+
+            if (OperatingSystem.IsLinux()) {
+                libwkhtmlFileName = "libwkhtmltox.so";
+            } else if (OperatingSystem.IsWindows()) {
+                libwkhtmlFileName = "libwkhtmltox.dll";
+            } else if (OperatingSystem.IsMacOS()) {
+                libwkhtmlFileName = "libwkhtmltox.dylib";
+            }
+            
             var context = new CustomAssemblyLoadContext();
-            context.LoadUnmanagedLibrary(Path.Combine(Directory.GetCurrentDirectory(), "libwkhtmltox.dll"));
+            context.LoadUnmanagedLibrary(Path.Combine(Directory.GetCurrentDirectory(), libwkhtmlFileName));
 
             services.AddSingleton<IAccountService, AccountService>();
             services.AddSingleton<ICourseService, CourseService>();
