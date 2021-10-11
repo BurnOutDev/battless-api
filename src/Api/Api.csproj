@@ -25,5 +25,11 @@
 		<ProjectReference Include="..\Persistence\Persistence.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Content Include="./libwkhtmltox*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
 
 </Project>
