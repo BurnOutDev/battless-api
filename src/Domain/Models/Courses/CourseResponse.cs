@@ -18,7 +18,7 @@ namespace Domain.Models.Courses
     {
         public int Order { get; set; }
         public string Title { get; set; }
-        public string Content { get; set; }
+        public List<string> Content { get; set; }
         public string ContentType { get; set; }
     }
 }

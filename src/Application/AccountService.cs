@@ -67,7 +67,7 @@ namespace Application
                     new Chapter
                     {
                         Order = 1,
-                        Content = "https://trailers.imovies.cc/movie_files2/5f7b3785e2a70.mp4",
+                        Content = new List<string> { "https://trailers.imovies.cc/movie_files2/5f7b3785e2a70.mp4" },
                         ContentType = "Video"
                     }
                 }
