@@ -33,5 +33,7 @@ namespace Domain.Entities
         {
             return this.RefreshTokens?.Find(x => x.Token == token) != null;
         }
+
+        public List<CurrentWatches> CurrentWatches { get; set; }
     }
 }
